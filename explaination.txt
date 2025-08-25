@@ -1,0 +1,56 @@
+Express: (Web framework for Nodejs-runs on Nodejs)
+    Express is a web franework for Node.js that simplifies building web applications and APIs. Like, instead of writimg low level server code using Node's built in http module, Express
+    provides predefined functionalities such as routing, middleware support, serving static files, handling requests and responses effectuively.
+    It runs on top of Node.js and alows developers to quickly set up servers, manage diff endpoints and integrate features like authentication.
+    -> Predefined functionalities
+        1. Serving static files
+        2. Middleware support
+        3. routing
+        4. handling requests and responses
+///const express = require('express') → stores the function express in the variable.
+const dotenv = require('dotenv') → stores the function dotenv in the variable.///
+
+const express = require('express') imports the installed Express package, so you can use its functionalities
+(like creating a server, handling routes, middleware, etc.) inside your Node.js application.
+
+const app = express(); → Here we are invoking the express() function, and it returns an application object (commonly called app). This object provides methods and functionalities
+(like app.get(), app.post(), app.use(), etc.) to build and configure the server.
+The returned object is stored in the app variable
+
+require('dotenv').config() → This loads the dotenv package(3rd party package) and immediately runs its config() method, which reads variables 
+from the .env file and makes them available in your app via process.env.
+
+const morgan = require('morgan') → imports the Morgan logging package and stores it in the morgan variable.
+
+const fs = require('fs') → Here you are storing the fs module object (built-in Node.js module), not a function.
+
+const path = require('path') → stores the path module object (a built-in Node.js module) in the variable path.
+
+fs, path exports an object with utility methods (path.join(), path.resolve(),fs.readFile, fs.writeFile, etc.) instead of a function you need to call.
+
+const cors = require('cors') → here you are storing the cors function (from the CORS package) in the variable cors.
+
+express() → creates an Express app (not middleware itself), but then you use its built-in middleware methods like app.use(...).
+
+morgan() → returns a third-party middleware function for logging.
+
+cors() → returns a third-party middleware function for handling CORS.
+/////////////////////
+const accessLogStream = fs.createWriteStream(
+    path.join(__dirname, 'access.log'),
+    { flags: 'a' }
+);
+fs → built-in object (the File System module).
+createWriteStream → a method of that object, used to create a writable file stream.
+this will create access.log if it doesn’t exist, and keep writing logs into it if it already exists
+/////////
+Middleware is a function or layer that sits in the middle of some process and has the ability to alter/modify the data before processing it.
+Middleware in Express is a function that let you process or modify requests and responses before sending the final response to the user.
+///
+app.use(express.json())
+this middleware parses the request JSON body and stores it as a javascript object in req.body.
+///
+express.static makes a folder publicly accessible so users can directly load files(like images,css,js) in the browser without going through routes or authentication
+express.static is built-in middleware because it is provided directly by the Express framework to serve static files, making it a core feature of Express.
+
+morgan is 3rd party middleware because it is developed and maintained separately from Express and added as an external package to extend Express's functionality by logging HTTP requests. It’s not included by default in Express.
