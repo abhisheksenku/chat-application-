@@ -6,6 +6,8 @@ const morgan = require('morgan');
 const fs = require('fs');
 const cors = require('cors');
 const { METHODS } = require('http');
+const database = require('./utilities/sql');
+const models = require('./models/association');
 const port = process.env.PORT || 3000;
 const accessLogStream = fs.createWriteStream(
     path.join(__dirname,'access.log'),
@@ -13,12 +15,18 @@ const accessLogStream = fs.createWriteStream(
 );
 ////
 app.use(cors({
-    origin:'http://127.0.0.1:5500',
-    METHODS: ['GET','POST','PUT','DELETE','PATCH','OPTIONS']
+    origin:['http://127.0.0.1:5500','http://localhost:5500'],
+    METHODS: ['GET','POST','PUT','DELETE','PATCH','OPTIONS'],
+    credentials:true
 }));
+//miidlewares
 app.use(express.json());
 app.use(express.static(path.join(__dirname,'public')))
 app.use(morgan('combined',{stream:accessLogStream}));
+//routes
+const userRoutes = require('./routes/userRoutes');
+//route handler
+app.use('/user',userRoutes)
 //Root path
 app.get('/',(req,res)=>{
     const filePath = path.join(__dirname,'views','signup.html');
@@ -32,6 +40,13 @@ app.get('/login',(req,res)=>{
     const filePath = path.join(__dirname,'views','login.html');
     res.sendFile(filePath);
 });
-app.listen(port,()=>{
-    console.log(`Server is running at http://localhost:${port}`);
-})
+(async()=>{
+    try {
+        await database.sync({force:false});
+        app.listen(port,()=>{
+            console.log(`Server is running at http://localhost:${port}`);
+        });
+    } catch (error) {
+         console.error('Unable to connect to database', error);
+    }
+})();

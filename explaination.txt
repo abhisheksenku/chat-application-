@@ -54,3 +54,30 @@ express.static makes a folder publicly accessible so users can directly load fil
 express.static is built-in middleware because it is provided directly by the Express framework to serve static files, making it a core feature of Express.
 
 morgan is 3rd party middleware because it is developed and maintained separately from Express and added as an external package to extend Express's functionality by logging HTTP requests. It’s not included by default in Express.
+///
+Sequelize
+Sequelize is an Object Relational Mapping (ORM) library for Node.js.
+
+It helps you interact with relational databases (MySQL, PostgreSQL, SQLite, etc.) using JavaScript objects instead of raw SQL queries.
+
+You define models (tables) in JS, and Sequelize translates them into SQL.
+
+You can then create, read, update, delete (CRUD) records and even manage relationships (one-to-many, many-to-many) easily.
+////
+bcrypt 
+One way hashing---> means once you hash something you cannot revert back or get the original back
+but when we compare the new password bcrypt will hash the new password with the sam esalt rounds and compare with the already hashed password
+////
+encrypt
+two way hashing---> means you can take the scrambled value and get back the original using some key
+////
+jsonwebtoken
+In JWT authentication, a token is generated using a payload (for example { id: 1 }) along with a secret key known only to the server. This process creates a string with three parts: 
+header, payload, and a signature, where the signature is produced by combining the header and payload with the secret key. The secret itself is never stored in the token. 
+Later, when the client sends back the token for verification, the server again uses the same secret key along with the header and payload to recompute the signature.
+If this recomputed signature matches the one inside the token, the token is considered valid and the payload (e.g., the user id) is returned; otherwise, the token is rejected. 
+Thus, the secret key is required both when generating and verifying the token, ensuring that only the server can validate authenticity.
+///
+transaction
+a database feature, which basically ensures all the operations present to be treated as one unit, only if all the operations are succeed changes are made to the databse, if not
+everything is rolled back without making the changes
