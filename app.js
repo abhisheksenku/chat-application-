@@ -5,6 +5,7 @@ const path = require('path');
 const morgan = require('morgan');
 const fs = require('fs');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const { METHODS } = require('http');
 const database = require('./utilities/sql');
 const models = require('./models/association');
@@ -23,6 +24,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.static(path.join(__dirname,'public')))
 app.use(morgan('combined',{stream:accessLogStream}));
+app.use(cookieParser());
+//authentication middleware
+const userAuthenticate = require('./middleware/auth');
 //routes
 const userRoutes = require('./routes/userRoutes');
 //route handler
@@ -38,6 +42,10 @@ app.get('/signup',(req,res)=>{
 });
 app.get('/login',(req,res)=>{
     const filePath = path.join(__dirname,'views','login.html');
+    res.sendFile(filePath);
+});
+app.get('/chat',userAuthenticate.authenticate,(req,res)=>{
+    const filePath = path.join(__dirname,'views','chat.html');
     res.sendFile(filePath);
 });
 (async()=>{

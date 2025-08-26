@@ -23,6 +23,10 @@ const User = database.define('User',{
     password:{
         type:DataTypes.TEXT,
         allowNull:false
+    },
+      isOnline: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false   
     }
 },{
     timestamps:true

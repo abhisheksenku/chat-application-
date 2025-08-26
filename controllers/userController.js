@@ -57,17 +57,36 @@ const loginUser = async(req,res)=>{
             return res.status(401).json({error:'Invalid response'});
         }
         const token = genearteAccessToken(emailValidation.id);
-        return res.status(200).json({
-            message:'Login successfull',
-            token,
-            user:{id:emailValidation.id,email:emailValidation.email}
-        });
+        await User.update({isOnline:true},{
+            where:{id:emailValidation.id}
+        })
+        return res.status(200)
+            .cookie("token", token, {
+                httpOnly: true,
+                secure: false, // change to true in production (HTTPS)
+                sameSite: "strict",
+            })
+            .json({
+                message: 'Login successful',
+                token,
+                user: { id: emailValidation.id, email: emailValidation.email },
+            });
     } catch (error) {
         console.error('Error during login:',error);
         res.status(500).json({error:'Internal server error'});
     }
+};
+const getAllUsers = async(req,res)=>{
+    try {
+        const allUsers = await User.findAll();
+        res.status(200).json(allUsers);
+    } catch (error) {
+        console.error('Error while retrieving users:',error);
+        res.status(500).send('Error while fetching users');
+    }
 }
 module.exports = {
     postUsers,
-    loginUser
+    loginUser,
+    getAllUsers
 }
