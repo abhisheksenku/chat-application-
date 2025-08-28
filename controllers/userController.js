@@ -2,6 +2,7 @@ const User = require('../models/users');
 const saltRounds = 10;
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const{Op} = require('sequelize');
 const sequelize = require('../utilities/sql');
 require('dotenv').config();
 
@@ -78,7 +79,10 @@ const loginUser = async(req,res)=>{
 };
 const getAllUsers = async(req,res)=>{
     try {
-        const allUsers = await User.findAll();
+        const currentUserId = req.user.id;
+        const allUsers = await User.findAll({
+            where:{id:{[Op.ne]:currentUserId}}
+        });
         res.status(200).json(allUsers);
     } catch (error) {
         console.error('Error while retrieving users:',error);

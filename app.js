@@ -29,8 +29,10 @@ app.use(cookieParser());
 const userAuthenticate = require('./middleware/auth');
 //routes
 const userRoutes = require('./routes/userRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 //route handler
-app.use('/user',userRoutes)
+app.use('/user',userRoutes);
+app.use('/chat',chatRoutes);
 //Root path
 app.get('/',(req,res)=>{
     const filePath = path.join(__dirname,'views','signup.html');
@@ -50,7 +52,7 @@ app.get('/chat',userAuthenticate.authenticate,(req,res)=>{
 });
 (async()=>{
     try {
-        await database.sync({force:false});
+        await database.sync({force:true});
         app.listen(port,()=>{
             console.log(`Server is running at http://localhost:${port}`);
         });

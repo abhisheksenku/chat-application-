@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-    <link rel="stylesheet" href="/css/chat.css">
+    <link rel="stylesheet" href="chat.css">
 </head>
 <body>
     <div class="dashboard-container">
@@ -20,23 +20,22 @@
         <div class="user-list">
             <h3>Contacts</h3>
             <ul id="users">
-
+                <li data-user="User 1">User 1</li>
+                <li data-user="User 2">User 2</li>
             </ul>
         </div>
         <!-- Chat section -->
         <div class="chat-section">
             <div class="chat-header" id="chatHeader">Chats</div>
             <div class="chat-box" id="chatBox"></div>
-            <div class="send">
-                <form action="#" id="sendForm">
-                    <input type="text" id="messageInput" placeholder="Type...">
-                    <button id="btn" type="submit">Send</button>
-                </form>    
+            <div class="message-input">
+                <input type="text" id="messageInput" placeholder="Type...">
+                <button id="sendBtn">Send</button>
             </div>
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="/js/config.js"></script>
-    <script src="/js/chat.js"></script>
+    <script src="chat.js"></script>
 </body>
 </html>
