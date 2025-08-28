@@ -88,9 +88,17 @@ const getAllUsers = async(req,res)=>{
         console.error('Error while retrieving users:',error);
         res.status(500).send('Error while fetching users');
     }
+};
+const getCurrentUserID = async (req,res)=>{
+    res.json({
+        id:req.user.id,
+        name:req.user.name,
+        email:req.user.email
+    });
 }
 module.exports = {
     postUsers,
     loginUser,
-    getAllUsers
+    getAllUsers,
+    getCurrentUserID
 }

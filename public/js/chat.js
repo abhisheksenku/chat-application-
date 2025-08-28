@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const chatBox = document.getElementById("chatBox");
     const messageInput = document.getElementById("messageInput");
     const sendForm = document.getElementById("sendForm");
+    //to store the current selected user and logged in user
+    let currentChatUser = null;
+    let myUserId = null;
 
     const token = localStorage.getItem('token');
     if (!token) {
@@ -16,6 +19,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     try {
+        const myresponse = await axios.get(`${BASE_URL}/user/me`,{
+          headers:{Authorization:token}
+        });
+        myUserId = myresponse.data.id;
+
         const response = await axios.get(`${BASE_URL}/user/fetch`, {
             headers: { Authorization: token }
         });
@@ -33,9 +41,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // When clicked, just set header (no chats yet)
             li.addEventListener('click', () => {
+              currentChatUser = user;
                 chatHeader.textContent = user.name;
-                document.querySelectorAll('#users li').forEach(u => u.classList.remove('active'));
+                // document.querySelectorAll('#users li').forEach(u => u.classList.remove('active'));
+                const userLists = document.querySelectorAll('#users li');
+                for(let i =0; i<userLists.length; i++){
+                  userLists[i].classList.remove('active');
+                }
                 li.classList.add('active');
+                chatBox.innerHTML = ''
+                //to load the current chat of the selected user
+                loadMessages(user.id);
             });
 
             usersList.appendChild(li);
@@ -44,16 +60,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
         console.error('Error fetching users:', error.response ? error.response.data : error.message);
     }
+    const loadMessages = async (UserId) => {
+      try {
+        const response = await axios.get(`${BASE_URL}/chat/fetch/${UserId}`,{
+          headers:{Authorization:token}
+        });
+        const messages = response.data;
+        console.log('Chat history:',messages);
+        chatBox.innerHTML = '';
+        const ChatHistory = response.data;
+        ChatHistory.forEach(msg=>{
+          append(`${msg.senderName}:${msg.message}`,
+            msg.senderId === myUserId ? 'sent':'received'
+          );
+        });
+      } catch (error) {
+        console.error('Error while loading Messages',error.response?.data||error.message);
+      }
+    }
 
     // Send message
     sendForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const chatMessage = messageInput.value.trim();
-        if (!chatMessage) return;
+        if (!chatMessage || !currentChatUser) return;
 
         try {
             // Save to DB
             await axios.post(`${BASE_URL}/chat/add`, {
+                to:currentChatUser.id,
                 message: chatMessage
             }, {
                 headers: { Authorization: token }
@@ -96,6 +131,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 });
+
 
 
 // document.addEventListener('DOMContentLoaded',async ()=>{

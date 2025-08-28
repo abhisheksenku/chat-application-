@@ -6,13 +6,12 @@
 }
 
 body {
-  margin: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #f4f6f9;
   color: #333;
 }
 
-/* ====== Dashboard (Top Bar) ====== */
+/* ===== Top Bar ===== */
 .dashboard-container {
   background-color: #2980b9;
   padding: 12px 20px;
@@ -32,7 +31,6 @@ body {
   position: relative;
   display: inline-block;
 }
-
 
 .dropbtn {
   background-color: #2980b9;
@@ -73,7 +71,7 @@ body {
   background-color: #1f6391;
 }
 
-/* ====== Chat Layout ====== */
+/* ===== Chat Layout ===== */
 .chat-container {
   display: flex;
   max-width: 1000px;
@@ -85,11 +83,12 @@ body {
   height: 80vh;
 }
 
-/* ====== User List (Contacts) ====== */
+/* ===== User List ===== */
 .user-list {
-  width: 30%;
+  width: 40%;
   background: #f8f9fb;
-  border-right: 1px solid #ddd;
+  border-right: 2px solid #ddd;
+  border-radius: 5px;
   padding: 15px;
   overflow-y: auto;
 }
@@ -121,7 +120,7 @@ body {
   font-weight: bold;
 }
 
-/* ====== Chat Section ====== */
+/* ===== Chat Section ===== */
 .chat-section {
   width: 70%;
   display: flex;
@@ -138,7 +137,7 @@ body {
   border-bottom: 1px solid #ddd;
 }
 
-/* ====== Chat Messages ====== */
+/* ===== Messages ===== */
 .chat-box {
   flex-grow: 1;
   overflow-y: auto;
@@ -158,23 +157,23 @@ body {
   word-wrap: break-word;
 }
 
-/* Message from me */
+/* Sent by me (right) */
 .message.sent {
   background: #2980b9;
   color: #fff;
   align-self: flex-end;
-  border-bottom-right-radius: 4px;
+  border-bottom-right-radius: 6px;
 }
 
-/* Message from others */
+/* Received (left) */
 .message.received {
   background: #e5e5ea;
   color: #333;
   align-self: flex-start;
-  border-bottom-left-radius: 4px;
+  border-bottom-left-radius: 6px;
 }
 
-/* ====== Input Area ====== */
+/* ===== Input Area ===== */
 .message-input {
   display: flex;
   padding: 12px;
@@ -212,7 +211,7 @@ body {
   background-color: #1f6391;
 }
 
-/* ====== Scrollbar Styling ====== */
+/* ===== Scrollbar Styling ===== */
 .chat-box::-webkit-scrollbar, 
 .user-list::-webkit-scrollbar {
   width: 6px;
