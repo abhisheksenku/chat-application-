@@ -12,10 +12,6 @@ const Message = database.define('Message', {
     type: DataTypes.STRING,
     allowNull: false
   },
-  senderId: {   
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
   receiverId: {
     type: DataTypes.INTEGER,
     allowNull: false

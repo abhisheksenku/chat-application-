@@ -29,7 +29,7 @@ const User = database.define('User',{
         defaultValue: false   
     },
     lastActiveChat: { 
-        type: DataTypes.INTEGER, // stores another user's ID 
+        type: DataTypes.INTEGER, 
         allowNull: true, 
     }
 },{

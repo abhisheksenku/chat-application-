@@ -7,12 +7,20 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
+const { Server } = require('socket.io');
 const database = require('./utilities/sql');
 const models = require('./models/association');
 const userAuthenticate = require('./middleware/auth');
 const userRoutes = require('./routes/userRoutes');
 const chatRoutes = require('./routes/chatRoutes');
-
+const chatHandlers = require('./sockets/chatSocket');
+// socket handlers
+const {
+  registerHandler,
+  sendMessageHandler,
+  typingHandler,
+  disconnectHandler
+} = require('./sockets/chatSocket'); //  import handlers
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -22,12 +30,7 @@ const accessLogStream = fs.createWriteStream(
   path.join(__dirname, 'access.log'),
   { flags: 'a' }
 );
-////
-app.use(cors({
-    origin:['http://127.0.0.1:5500','http://localhost:5500'],
-    METHODS: ['GET','POST','PUT','DELETE','PATCH','OPTIONS'],
-    credentials:true
-}));
+
 // middlewares
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -53,13 +56,30 @@ app.get('/chat', userAuthenticate.authenticate, (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'chat.html'));
 });
 
+// create server + socket.io
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: ['http://127.0.0.1:5500', 'http://localhost:5500'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    credentials: true
+  }
+});
 
+// attach socket handlers
+io.on('connection', (socket) => {
+  console.log(`New socket: ${socket.id}`);
+  registerHandler(io, socket);
+  sendMessageHandler(io, socket);
+  typingHandler(io, socket);
+  disconnectHandler(io, socket);
+});
 
 // DB + start server
 (async () => {
   try {
-    await database.sync({ force: true });
-    app.listen(port, () => {
+    await database.sync({ force: false });
+    server.listen(port, () => {
       console.log(`Server running at http://localhost:${port}`);
     });
   } catch (error) {
