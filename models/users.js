@@ -27,6 +27,10 @@ const User = database.define('User',{
       isOnline: {
         type: DataTypes.BOOLEAN,
         defaultValue: false   
+    },
+    lastActiveChat: { 
+        type: DataTypes.INTEGER, // stores another user's ID 
+        allowNull: true, 
     }
 },{
     timestamps:true

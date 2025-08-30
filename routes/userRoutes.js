@@ -5,5 +5,6 @@ const userAuthenticate = require('../middleware/auth');
 router.post('/add',userController.postUsers);
 router.post('/login',userController.loginUser);
 router.get('/fetch',userAuthenticate.authenticate,userController.getAllUsers);
-router.get('/me',userAuthenticate.authenticate,userController.getCurrentUserID);
+router.get('/myaccount',userAuthenticate.authenticate,userController.getCurrentUserID);
+router.post('/updateLastChat',userAuthenticate.authenticate,userController.updateLastactiveChat);
 module.exports = router;

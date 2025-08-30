@@ -81,7 +81,8 @@ const getAllUsers = async(req,res)=>{
     try {
         const currentUserId = req.user.id;
         const allUsers = await User.findAll({
-            where:{id:{[Op.ne]:currentUserId}}
+            where: { id: { [Op.ne]: currentUserId } },
+            attributes: ['id', 'name', 'email', 'isOnline', 'lastActiveChat']  
         });
         res.status(200).json(allUsers);
     } catch (error) {
@@ -90,15 +91,38 @@ const getAllUsers = async(req,res)=>{
     }
 };
 const getCurrentUserID = async (req,res)=>{
-    res.json({
-        id:req.user.id,
-        name:req.user.name,
-        email:req.user.email
-    });
+    try {
+        const user = await User.findByPk(req.user.id,{
+            attributes:['id','name','email','lastActiveChat']
+        });
+        res.json(user)
+    } catch (error) {
+        res.status(500).json({error:'Could not fetch user information'});
+    }
+    // res.json({
+    //     id:req.user.id,
+    //     name:req.user.name,
+    //     email:req.user.email
+    // });
+};
+const updateLastactiveChat = async(req,res)=>{
+    try {
+        const userId = req.user.id;
+        const {chatUserId} = req.body;
+        await User.update(
+            {lastActiveChat: chatUserId},
+            {where:{id:userId}}
+        );
+        res.json({success:true});
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({error:'Could not update the last active chat'});
+    }
 }
 module.exports = {
     postUsers,
     loginUser,
     getAllUsers,
-    getCurrentUserID
+    getCurrentUserID,
+    updateLastactiveChat
 }

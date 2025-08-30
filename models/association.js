@@ -1,11 +1,14 @@
-const User = require('../models/users');
-const Message = require('../models/messages');
+const User = require('./users');
+const Message = require('./messages');
 
-//associations
-// One user can send many meesages, and particular message belongs to that particular user
-User.hasMany(Message);
-Message.belongsTo(User);
+// One user can send many messages
+User.hasMany(Message, { as: "SentMessages", foreignKey: "senderId" });
 
-module.exports = {
-    User,Message
-}
+// One user can receive many messages
+User.hasMany(Message, { as: "ReceivedMessages", foreignKey: "receiverId" });
+
+// Each message belongs to a sender and a receiver
+Message.belongsTo(User, { as: "Sender", foreignKey: "senderId" });
+Message.belongsTo(User, { as: "Receiver", foreignKey: "receiverId" });
+
+module.exports = { User, Message };
