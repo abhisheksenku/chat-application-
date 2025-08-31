@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="/css/chat.css">
+    <title>Chat Application</title>
+    <link rel="stylesheet" href="/css/chat.css"> <!-- Your CSS -->
 </head>
 <body>
     <div class="dashboard-container">
@@ -16,17 +16,25 @@
             </div>
         </div>
     </div>
+
+    <!-- Chat Container -->
     <div class="chat-container">
         <div class="user-list">
-            <h3>Contacts</h3>
+            <h3>Contacts & Groups</h3>
             <ul id="users">
-
+                <!-- Users and Groups will be dynamically populated here -->
             </ul>
         </div>
-        <!-- Chat section -->
+
+        <!-- Chat Section -->
         <div class="chat-section">
-            <div class="chat-header" id="chatHeader">Chats</div>
-            <div class="chat-box" id="chatBox"></div>
+            <div class="chat-header">
+                <span id="chatTitle">Chats</span>
+                <button id="createGroupBtn">Create Group</button>
+            </div>
+            <div class="chat-box" id="chatBox">
+                <!-- Chat messages will appear here -->
+            </div>
             <div class="message-input">
                 <form action="#" id="sendForm">
                     <input type="text" id="messageInput" placeholder="Type...">
@@ -35,10 +43,26 @@
             </div>
         </div>
     </div>
+
+    <!-- Create Group Modal -->
+    <div id="createGroupModal">
+        <div class="modal-content">
+            <h3>Create Group</h3>
+            <input type="text" id="groupName" placeholder="Group Name">
+            <div id="groupMembersList">
+                <!-- Checkboxes for members will be populated dynamically -->
+            </div>
+            <div class="modal-actions">
+                <button id="cancelGroupBtn">Cancel</button>
+                <button id="saveGroupBtn">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- External Scripts -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="/js/config.js"></script>
-    <script src="/js/chat.js"></script>
-    <!-- <script src="/js/websocketChat.js"></script> -->
+    <script src="/js/chat.js"></script> <!-- Your JS file -->
 </body>
 </html>

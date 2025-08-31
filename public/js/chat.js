@@ -4,13 +4,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     const accountMenu = document.getElementById('accountMenu');
     const usersList = document.getElementById('users');
     const chatHeader = document.getElementById("chatHeader");
+    const chatTitle = document.getElementById("chatTitle");
     const chatBox = document.getElementById("chatBox");
     const messageInput = document.getElementById("messageInput");
     const sendForm = document.getElementById("sendForm");
+    const createGroupBtn = document.getElementById("createGroupBtn");
+    const createGroupModal = document.getElementById("createGroupModal");
+
+    const groupNameInput = document.getElementById("groupName");
+    const groupMembersList = document.getElementById("groupMembersList");
+    const saveGroupBtn = document.getElementById("saveGroupBtn");
+    const cancelGroupBtn = document.getElementById("cancelGroupBtn");
 
     let currentChatUser = null;
     let myUserId = null;
-    let lastMessages = []; // store IDs to avoid duplicates
+    let lastMessages = [];
+    let allUsers = [];
 
     const token = localStorage.getItem('token');
     if (!token) {
@@ -19,34 +28,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // --- Append message and save to localStorage ---
-    const append = (msgObj) => {
-        const { id, message, type } = msgObj;
-
+    const append = (chatMessage, type) => {
         const messageElement = document.createElement('div');
-        messageElement.innerText = type === 'sent' ? `You: ${message}` : message;
+        messageElement.innerText = chatMessage;
         messageElement.classList.add('message', type);
         chatBox.appendChild(messageElement);
         chatBox.scrollTop = chatBox.scrollHeight;
+    };
 
-        if (!currentChatUser) return;
-        let storedMessages = JSON.parse(localStorage.getItem(`chat_${currentChatUser.id}`)) || [];
-        if (!storedMessages.find(m => m.id === id)) {
-            storedMessages.push({ id, message, type });
-            localStorage.setItem(`chat_${currentChatUser.id}`, JSON.stringify(storedMessages));
+    const loadMessages = async (userId) => {
+        try {
+            const response = await axios.get(`${BASE_URL}/chat/fetch/${userId}`, {
+                headers: { Authorization: token }
+            });
+            chatBox.innerHTML = '';
+            const chatHistory = response.data;
+            chatHistory.forEach(msg => {
+                const type = msg.UserId === myUserId ? 'sent' : 'received';
+                append(msg.UserId === myUserId ? `You: ${msg.message}` : msg.message, type);
+            });
+            lastMessages = chatHistory.map(msg => msg.id);
+        } catch (error) {
+            console.error('Error while loading messages', error.response?.data || error.message);
         }
     };
 
-    // --- Load messages from localStorage ---
-    const loadOldMessages = () => {
-        if (!currentChatUser) return;
-        chatBox.innerHTML = '';
-        const storedMessages = JSON.parse(localStorage.getItem(`chat_${currentChatUser.id}`)) || [];
-        storedMessages.forEach(msg => append(msg));
-        lastMessages = storedMessages.map(msg => msg.id);
-    };
-
-    // --- Load users and last active chat ---
+    // Fetch my account info and all users
     try {
         const myResponse = await axios.get(`${BASE_URL}/user/myaccount`, {
             headers: { Authorization: token }
@@ -57,114 +64,104 @@ document.addEventListener('DOMContentLoaded', async () => {
         const response = await axios.get(`${BASE_URL}/user/fetch`, {
             headers: { Authorization: token }
         });
-        const allUsers = response.data;
+        allUsers = response.data;
 
         usersList.innerHTML = '';
-
         allUsers.forEach(user => {
             const li = document.createElement('li');
             li.textContent = user.name;
             li.setAttribute('data-user', user.name);
 
+            if (user.isGroup) li.classList.add('group');
+
             li.addEventListener('click', async () => {
                 currentChatUser = user;
-                chatHeader.textContent = user.name;
-
+                chatTitle.textContent = user.name; // Only update span
                 document.querySelectorAll('#users li').forEach(u => u.classList.remove('active'));
                 li.classList.add('active');
 
                 try {
-                    await axios.post(`${BASE_URL}/user/updateLastChat`,
-                        { chatUserId: user.id },
-                        { headers: { Authorization: token } }
-                    );
+                    await axios.post(`${BASE_URL}/user/updateLastChat`, { chatUserId: user.id }, {
+                        headers: { Authorization: token }
+                    });
                 } catch (error) {
                     console.error('Failed to update last chat', error);
                 }
 
-                lastMessages = [];
-                loadOldMessages();
-                pollNewMessages(); // fetch new messages
+                chatBox.innerHTML = '';
+                loadMessages(user.id);
             });
 
             usersList.appendChild(li);
         });
 
-        // Set last active chat if exists
         if (lastActiveChatId) {
             const selectedUser = allUsers.find(u => u.id === lastActiveChatId);
             if (selectedUser) {
                 currentChatUser = selectedUser;
-                chatHeader.textContent = selectedUser.name;
+                chatTitle.textContent = selectedUser.name;
                 const li = [...document.querySelectorAll('#users li')]
                     .find(el => el.getAttribute('data-user') === selectedUser.name);
                 if (li) li.classList.add('active');
-
-                lastMessages = [];
-                loadOldMessages();
-                pollNewMessages();
+                loadMessages(selectedUser.id);
             }
         }
 
     } catch (error) {
-        console.error('Error fetching users:', error.response ? error.response.data : error.message);
+        console.error('Error fetching users:', error.response?.data || error.message);
     }
 
-    // --- Polling new messages ---
+    // Poll new messages
     const pollNewMessages = async () => {
         if (!currentChatUser) return;
-
         try {
-            const storedMessages = JSON.parse(localStorage.getItem(`chat_${currentChatUser.id}`)) || [];
-            const lastMessageId = storedMessages.length > 0 ? storedMessages[storedMessages.length - 1].id : 0;
-
-            const response = await axios.get(`${BASE_URL}/chat/fetch/${currentChatUser.id}?after=${lastMessageId}`, {
+            const response = await axios.get(`${BASE_URL}/chat/fetch/${currentChatUser.id}`, {
                 headers: { Authorization: token }
             });
-
-            const newMessages = response.data;
-
-            newMessages.forEach(msg => {
-                if (!lastMessages.includes(msg.id)) {
+            const messages = response.data;
+            const newMessageIds = messages.map(msg => msg.id);
+            if (newMessageIds.join(',') !== lastMessages.join(',')) {
+                chatBox.innerHTML = '';
+                messages.forEach(msg => {
                     const type = msg.UserId === myUserId ? 'sent' : 'received';
-                    append({ id: msg.id, message: msg.message, type });
-                    lastMessages.push(msg.id);
-                }
-            });
-
+                    append(msg.UserId === myUserId ? `You: ${msg.message}` : msg.message, type);
+                });
+                lastMessages = newMessageIds;
+            }
         } catch (error) {
             console.error('Error fetching new messages:', error.response?.data || error.message);
         }
     };
-
     setInterval(pollNewMessages, 1000);
 
-    // --- Send message ---
+    // Send message
     sendForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const chatMessage = messageInput.value.trim();
         if (!chatMessage || !currentChatUser) return;
 
         try {
-            const response = await axios.post(`${BASE_URL}/chat/add`, {
-                message: chatMessage,
-                to: currentChatUser.id
-            }, { headers: { Authorization: token } });
-
-            const newMessageId = response.data.id;
-
-            // Update lastMessages before appending to prevent duplication
-            lastMessages.push(newMessageId);
-
-            append({ id: newMessageId, message: chatMessage, type: 'sent' });
+            let response;
+            if (currentChatUser.isGroup) {
+                response = await axios.post(`${BASE_URL}/chat/add/group`, {
+                    message: chatMessage,
+                    groupId: currentChatUser.id
+                }, { headers: { Authorization: token } });
+            } else {
+                response = await axios.post(`${BASE_URL}/chat/add`, {
+                    message: chatMessage,
+                    to: currentChatUser.id
+                }, { headers: { Authorization: token } });
+            }
+            append(`You: ${chatMessage}`, 'sent');
             sendForm.reset();
-
+            lastMessages.push(response.data.id);
         } catch (error) {
             console.error('Error while sending message', error);
         }
     });
 
-    // --- Account dropdown ---
+    // Account dropdown
     accountBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         accountMenu.style.display = accountMenu.style.display === "block" ? "none" : "block";
@@ -181,7 +178,71 @@ document.addEventListener('DOMContentLoaded', async () => {
             accountMenu.style.display = "none";
         }
     });
+
+    // === CREATE GROUP FUNCTIONALITY ===
+    createGroupBtn.addEventListener('click', () => {
+        createGroupModal.style.display = "flex";
+
+        // Populate members list excluding myself
+        groupMembersList.innerHTML = '';
+        allUsers.forEach(user => {
+            if (user.id !== myUserId) {
+                const label = document.createElement('label');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = user.id;
+                label.appendChild(checkbox);
+                label.append(` ${user.name}`);
+                groupMembersList.appendChild(label);
+            }
+        });
+    });
+
+    cancelGroupBtn.addEventListener('click', () => {
+        createGroupModal.style.display = "none";
+    });
+
+    saveGroupBtn.addEventListener('click', async () => {
+        const selectedMembers = [...groupMembersList.querySelectorAll('input[type="checkbox"]:checked')].map(cb => parseInt(cb.value));
+        const groupName = groupNameInput.value.trim();
+        if (!groupName || selectedMembers.length === 0) {
+            alert('Enter group name and select at least one member');
+            return;
+        }
+
+        try {
+            const response = await axios.post(`${BASE_URL}/group/create`, {
+                name: groupName,
+                members: selectedMembers
+            }, { headers: { Authorization: token } });
+
+            // Add new group to user list
+            const newGroup = response.data;
+            allUsers.push(newGroup);
+
+            const li = document.createElement('li');
+            li.textContent = newGroup.name;
+            li.setAttribute('data-user', newGroup.name);
+            li.classList.add('group');
+
+            li.addEventListener('click', async () => {
+                currentChatUser = newGroup;
+                chatTitle.textContent = newGroup.name;
+                document.querySelectorAll('#users li').forEach(u => u.classList.remove('active'));
+                li.classList.add('active');
+                chatBox.innerHTML = '';
+                loadMessages(newGroup.id);
+            });
+
+            usersList.appendChild(li);
+            createGroupModal.style.display = "none";
+            groupNameInput.value = '';
+        } catch (error) {
+            console.error('Error creating group', error.response?.data || error.message);
+        }
+    });
 });
+
 
 // document.addEventListener('DOMContentLoaded', async () => {
 //     const accountBtn = document.getElementById('accountBtn');
@@ -195,7 +256,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 //     let currentChatUser = null;
 //     let myUserId = null;
-//     let lastMessages = []; // store IDs of messages to avoid duplicates
+//     let lastMessages = [];
 
 //     const token = localStorage.getItem('token');
 //     if (!token) {
@@ -204,27 +265,31 @@ document.addEventListener('DOMContentLoaded', async () => {
 //         return;
 //     }
 
-//     // --- Append message to chat ---
 //     const append = (chatMessage, type) => {
-//         const id = chatMessage.id;
 //         const messageElement = document.createElement('div');
-//         // messageElement.innerText = chatMessage;
-//         messageElement.innerText = type === 'sent' ? `You: ${message}` : message;
+//         messageElement.innerText = chatMessage;
 //         messageElement.classList.add('message', type);
 //         chatBox.appendChild(messageElement);
 //         chatBox.scrollTop = chatBox.scrollHeight;
-//         // Save to localStorage
-//       let storedMessages = JSON.parse(localStorage.getItem(`chat_${currentChatUser.id}`)) || [];
-      
-//       // Avoid duplicate storage
-//       if (!storedMessages.find(m => m.id === id)) {
-//           storedMessages.push({ id, chatMessage, type });
-//           localStorage.setItem(`chat_${currentChatUser.id}`, JSON.stringify(storedMessages));
-//       }
-
 //     };
 
-//     // --- Load users and last active chat ---
+//     const loadMessages = async (UserId) => {
+//         try {
+//             const response = await axios.get(`${BASE_URL}/chat/fetch/${UserId}`, {
+//                 headers: { Authorization: token }
+//             });
+//             chatBox.innerHTML = '';
+//             const ChatHistory = response.data;
+//             ChatHistory.forEach(msg => {
+//                 const type = msg.UserId === myUserId ? 'sent' : 'received';
+//                 append(msg.UserId === myUserId ? `You: ${msg.message}` : msg.message, type);
+//             });
+//             lastMessages = ChatHistory.map(msg => msg.id);
+//         } catch (error) {
+//             console.error('Error while loading messages', error.response?.data || error.message);
+//         }
+//     };
+
 //     try {
 //         const myresponse = await axios.get(`${BASE_URL}/user/myaccount`, {
 //             headers: { Authorization: token }
@@ -237,39 +302,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 //         });
 //         const allUsers = response.data;
 
-//         usersList.innerHTML = '';
-
-//         allUsers.forEach(user => {
-//             const li = document.createElement('li');
-//             li.textContent = user.name;
-//             li.setAttribute('data-user', user.name);
-
-//             li.addEventListener('click', async () => {
-//                 currentChatUser = user;
-//                 chatHeader.textContent = user.name;
-
-//                 document.querySelectorAll('#users li').forEach(u => u.classList.remove('active'));
-//                 li.classList.add('active');
-
-//                 // Update last active chat in backend
-//                 try {
-//                     await axios.post(`${BASE_URL}/user/updateLastChat`,
-//                         { chatUserId: user.id },
-//                         { headers: { Authorization: token } }
-//                     );
-//                 } catch (error) {
-//                     console.error('Failed to update last chat', error);
-//                 }
-
-//                 chatBox.innerHTML = '';
-//                 lastMessages = []; // reset last messages when switching chat
-//                 pollNewMessages(); // load messages immediately
-//             });
-
-//             usersList.appendChild(li);
-//         });
-
-//         // Set last active chat if exists
 //         if (lastActiveChatId) {
 //             const selectedUser = allUsers.find(u => u.id === lastActiveChatId);
 //             if (selectedUser) {
@@ -278,47 +310,65 @@ document.addEventListener('DOMContentLoaded', async () => {
 //                 const li = [...document.querySelectorAll('#users li')]
 //                     .find(el => el.getAttribute('data-user') === selectedUser.name);
 //                 if (li) li.classList.add('active');
-//                 pollNewMessages(); // load messages immediately
+//                 loadMessages(selectedUser.id);
 //             }
 //         }
 
+//         usersList.innerHTML = '';
+//         allUsers.forEach(user => {
+//             const li = document.createElement('li');
+//             li.textContent = user.name;
+//             li.setAttribute('data-user', user.name);
+
+//             li.addEventListener('click', async () => {
+//                 currentChatUser = user;
+//                 chatHeader.textContent = user.name;
+//                 document.querySelectorAll('#users li').forEach(u => u.classList.remove('active'));
+//                 li.classList.add('active');
+//                 try {
+//                     await axios.post(`${BASE_URL}/user/updateLastChat`, { chatUserId: user.id }, {
+//                         headers: { Authorization: token }
+//                     });
+//                 } catch (error) {
+//                     console.error('Failed to update last chat', error);
+//                 }
+//                 chatBox.innerHTML = '';
+//                 loadMessages(user.id);
+//             });
+
+//             usersList.appendChild(li);
+//         });
+
 //     } catch (error) {
-//         console.error('Error fetching users:', error.response ? error.response.data : error.message);
+//         console.error('Error fetching users:', error.response?.data || error.message);
 //     }
 
-//     // --- Polling function to fetch new messages ---
 //     const pollNewMessages = async () => {
 //         if (!currentChatUser) return;
-
 //         try {
 //             const response = await axios.get(`${BASE_URL}/chat/fetch/${currentChatUser.id}`, {
 //                 headers: { Authorization: token }
 //             });
-
 //             const messages = response.data;
-
-//             // Append only new messages
-//             messages.forEach(msg => {
-//                 if (!lastMessages.includes(msg.id)) {
+//             const newMessageIds = messages.map(msg => msg.id);
+//             if (newMessageIds.join(',') !== lastMessages.join(',')) {
+//                 chatBox.innerHTML = '';
+//                 messages.forEach(msg => {
 //                     const type = msg.UserId === myUserId ? 'sent' : 'received';
 //                     append(msg.UserId === myUserId ? `You: ${msg.message}` : msg.message, type);
-//                     lastMessages.push(msg.id);
-//                 }
-//             });
-
+//                 });
+//                 lastMessages = newMessageIds;
+//             }
 //         } catch (error) {
 //             console.error('Error fetching new messages:', error.response?.data || error.message);
 //         }
 //     };
+//     setInterval(pollNewMessages, 1000);
 
-//     setInterval(pollNewMessages, 1000); // poll every second
-
-//     // --- Send message ---
 //     sendForm.addEventListener('submit', async (event) => {
 //         event.preventDefault();
 //         const chatMessage = messageInput.value.trim();
 //         if (!chatMessage || !currentChatUser) return;
-
 //         try {
 //             const response = await axios.post(`${BASE_URL}/chat/add`, {
 //                 message: chatMessage,
@@ -326,21 +376,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 //             }, {
 //                 headers: { Authorization: token }
 //             });
-
-//             // Append to screen immediately
-//             // append(`You: ${chatMessage}`, 'sent');
+//             append(`You: ${chatMessage}`, 'sent');
 //             sendForm.reset();
-
-//             // Update lastMessages to prevent duplicate
-//             const newMessageId = response.data.id; // backend must return message ID
-//             lastMessages.push(newMessageId);
-
+//             lastMessages.push(response.data.id);
 //         } catch (error) {
 //             console.error('Error while sending message', error);
 //         }
 //     });
 
-//     // --- Account dropdown ---
 //     accountBtn.addEventListener('click', (e) => {
 //         e.stopPropagation();
 //         accountMenu.style.display = accountMenu.style.display === "block" ? "none" : "block";
@@ -359,245 +402,67 @@ document.addEventListener('DOMContentLoaded', async () => {
 //     });
 // });
 
-// // document.addEventListener('DOMContentLoaded', async () => {
+
+
+
+// // document.addEventListener('DOMContentLoaded',async ()=>{
 // //     const accountBtn = document.getElementById('accountBtn');
 // //     const logoutBtn = document.getElementById('logoutBtn');
 // //     const accountMenu = document.getElementById('accountMenu');
-// //     const usersList = document.getElementById('users');
+// //     const token = localStorage.getItem('token');
+
+    
 // //     const chatHeader = document.getElementById("chatHeader");
 // //     const chatBox = document.getElementById("chatBox");
 // //     const messageInput = document.getElementById("messageInput");
-// //     const sendForm = document.getElementById("sendForm");
-// //     //to store the current selected user and logged in user
-// //     let currentChatUser = null;
-// //     let myUserId = null;
-// //     let lastMessages = [];//to keep track of last messages to avoid duplicates
-
-// //     const token = localStorage.getItem('token');
-// //     if (!token) {
+// //     const sendBtn = document.getElementById("sendBtn");
+// //     if(!token){
 // //         alert('You must be logged in');
 // //         window.location.href = '/login';
 // //         return;
 // //     }
-// //     const loadMessages = async (UserId) => {
-// //       try {
-// //         const response = await axios.get(`${BASE_URL}/chat/fetch/${UserId}`,{
-// //           headers:{Authorization:token}
-// //         });        
-// //         chatBox.innerHTML = '';
-// //         const ChatHistory = response.data;
-// //         console.log('Chat history:',ChatHistory);
-// //         ChatHistory.forEach(msg => {
-// //           const type = msg.UserId === myUserId ? 'sent' : 'received';
-// //           append(msg.message, type);
-// //         });
-// //       } catch (error) {
-// //         console.error('Error while loading Messages',error.response?.data||error.message);
-// //       }
-// //     }
 // //     try {
-// //         const myresponse = await axios.get(`${BASE_URL}/user/myaccount`,{
-// //           headers:{Authorization:token}
-// //         });
-// //         myUserId = myresponse.data.id;
-// //         const lastActiveChatId = myresponse.data.lastActiveChat;
-
-
-// //         const response = await axios.get(`${BASE_URL}/user/fetch`, {
-// //             headers: { Authorization: token }
+// //         const response = await axios.get(`${BASE_URL}/user/fetch`,{
+// //             headers: { Authorization: token}
 // //         });
 // //         const allUsers = response.data;
-// //         console.log('Users fetched', allUsers);
-// //         if(lastActiveChatId){
-// //           const selectedUser = allUsers.find(u=>u.id === lastActiveChatId);
-// //           if(selectedUser){
-// //             currentChatUser = selectedUser;
-// //             chatHeader.textContent = selectedUser.name;
-// //             const li = [...document.querySelectorAll('#users li')]
-// //                           .find(el=>el.getAttribute('data-user') === selectedUser.name);
-// //             if(li)li.classList.add('active');
-// //             loadMessages(selectedUser.id)
-// //           }
-// //         }
-// //         // Clear sidebar first
-// //         usersList.innerHTML = '';
-
-// //         // Show users in sidebar
+// //         console.log('Users fetched',allUsers);
 // //         allUsers.forEach(user => {
-// //             const li = document.createElement('li');
-// //             li.textContent = user.name;
-// //             li.setAttribute('data-user', user.name);
-
-// //             // When clicked, just set header (no chats yet)
-// //             li.addEventListener('click', async () => {
-// //               currentChatUser = user;
-// //                 chatHeader.textContent = user.name;
-// //                 // document.querySelectorAll('#users li').forEach(u => u.classList.remove('active'));
-// //                 const userLists = document.querySelectorAll('#users li');
-// //                 for(let i =0; i<userLists.length; i++){
-// //                   userLists[i].classList.remove('active');
-// //                 }
-// //                 li.classList.add('active');
-// //                 try {
-// //                   await axios.post(`${BASE_URL}/user/updateLastChat`,
-// //                     {chatUserId:user.id},
-// //                     {headers:{Authorization:token}}
-// //                   );
-// //                 } catch (error) {
-// //                   console.error('Failed to update last chat',error)
-// //                 }
-// //                 chatBox.innerHTML = ''
-// //                 //to load the current chat of the selected user
-// //                 loadMessages(user.id);
+// //             user.addEventListener("click", () => {
+// //                 activeUser = user.getAttribute("data-user");
+// //                 chatHeader.textContent = `${activeUser}`;
+// //                 renderMessages(activeUser);
 // //             });
-
-// //             usersList.appendChild(li);
 // //         });
-
 // //     } catch (error) {
-// //         console.error('Error fetching users:', error.response ? error.response.data : error.message);
-// //     };
-
-// //     const pollNewMessages = async()=>{
-// //       if (!currentChatUser) return;
-// //         try {
-// //           const response = await axios.get(`${BASE_URL}/chat/fetch/${currentChatUser.id}`, {
-// //               headers: { Authorization: token }
-// //           });
-
-// //           const messages = response.data;
-
-// //           const newMessageIds = messages.map(msg => msg.id);
-// //           if (newMessageIds.join(',') !== lastMessages.join(',')) {
-// //               chatBox.innerHTML = '';
-// //               messages.forEach(msg => {
-// //                   const type = msg.UserId === myUserId ? 'sent' : 'received';
-// //                   append(msg.UserId === myUserId ? `You: ${msg.message}` : msg.message, type);
-// //               });
-// //               lastMessages = newMessageIds;
-// //           }
-// //       } catch (error) {
-// //           console.error('Error fetching new messages:', error.response?.data || error.message);
-// //       }
-// //     };
-// //     setInterval(pollNewMessages, 1000);
-
-// //     // Send message
-// //     sendForm.addEventListener('submit', async (event) => {
-// //         event.preventDefault();
-// //         const chatMessage = messageInput.value.trim();
-// //         if (!chatMessage || !currentChatUser) return;
-
-// //         try {
-// //             // Save to DB
-// //             await axios.post(`${BASE_URL}/chat/add`, {
-// //               message: chatMessage, 
-// //               to:currentChatUser.id                
-// //             }, {
-// //                 headers: { Authorization: token }
-// //             });
-
-// //             // Show on screen
-// //             append(`You: ${chatMessage}`, 'sent');
-// //             sendForm.reset();
-// //             // --- Update lastMessages to avoid duplicate on next poll ---
-// //             const newMessageId = response.data.id; // Assuming your backend returns the new message ID
-// //             lastMessages.push({ id: newMessageId, UserId: myUserId, message: chatMessage });
-// //         } catch (error) {
-// //             console.error('Error while sending message', error);
-// //       }
-// //     });
-
-// //     // Append message to chat box
-// //     const append = (chatMessage, type) => {
-// //         const messageElement = document.createElement('div');
-// //         messageElement.innerText = chatMessage;
-// //         messageElement.classList.add('message', type); 
-// //         // type = "sent" (me) OR "received" (others)
-// //         chatBox.appendChild(messageElement);
-// //         chatBox.scrollTop = chatBox.scrollHeight;
-// //     };
-
-
-// //     // Account dropdown
-// //     accountBtn.addEventListener('click', (e) => {
+// //         console.error('Error while fetching users:', error.response ? error.response.data : error.message);
+// //     }
+// //     accountBtn.addEventListener('click',(e)=>{
 // //         e.stopPropagation();
-// //         accountMenu.style.display = accountMenu.style.display === "block" ? "none" : "block";
+// //         accountMenu.style.display = 
+// //         accountMenu.style.display === "block" ? "none" : "block";
 // //     });
-
-// //     logoutBtn.addEventListener('click', () => {
+// //     logoutBtn.addEventListener('click',()=>{
 // //         document.cookie = "token=; Max-Age=0; path=/";
 // //         localStorage.removeItem('token');
 // //         window.location.href = '/login';
 // //     });
-
 // //     window.addEventListener("click", (e) => {
 // //         if (!accountBtn.contains(e.target) && !accountMenu.contains(e.target)) {
 // //             accountMenu.style.display = "none";
 // //         }
 // //     });
 // // });
+// // function renderMessages() {
+// //   chatBox.innerHTML = "";
+// //   if (!activeUser) return;
 
+// //   chats[activeUser].forEach(msg => {
+// //     const div = document.createElement("div");
+// //     div.classList.add("message", msg.type);
+// //     div.textContent = msg.text;
+// //     chatBox.appendChild(div);
+// //   });
 
-
-// // // document.addEventListener('DOMContentLoaded',async ()=>{
-// // //     const accountBtn = document.getElementById('accountBtn');
-// // //     const logoutBtn = document.getElementById('logoutBtn');
-// // //     const accountMenu = document.getElementById('accountMenu');
-// // //     const token = localStorage.getItem('token');
-
-    
-// // //     const chatHeader = document.getElementById("chatHeader");
-// // //     const chatBox = document.getElementById("chatBox");
-// // //     const messageInput = document.getElementById("messageInput");
-// // //     const sendBtn = document.getElementById("sendBtn");
-// // //     if(!token){
-// // //         alert('You must be logged in');
-// // //         window.location.href = '/login';
-// // //         return;
-// // //     }
-// // //     try {
-// // //         const response = await axios.get(`${BASE_URL}/user/fetch`,{
-// // //             headers: { Authorization: token}
-// // //         });
-// // //         const allUsers = response.data;
-// // //         console.log('Users fetched',allUsers);
-// // //         allUsers.forEach(user => {
-// // //             user.addEventListener("click", () => {
-// // //                 activeUser = user.getAttribute("data-user");
-// // //                 chatHeader.textContent = `${activeUser}`;
-// // //                 renderMessages(activeUser);
-// // //             });
-// // //         });
-// // //     } catch (error) {
-// // //         console.error('Error while fetching users:', error.response ? error.response.data : error.message);
-// // //     }
-// // //     accountBtn.addEventListener('click',(e)=>{
-// // //         e.stopPropagation();
-// // //         accountMenu.style.display = 
-// // //         accountMenu.style.display === "block" ? "none" : "block";
-// // //     });
-// // //     logoutBtn.addEventListener('click',()=>{
-// // //         document.cookie = "token=; Max-Age=0; path=/";
-// // //         localStorage.removeItem('token');
-// // //         window.location.href = '/login';
-// // //     });
-// // //     window.addEventListener("click", (e) => {
-// // //         if (!accountBtn.contains(e.target) && !accountMenu.contains(e.target)) {
-// // //             accountMenu.style.display = "none";
-// // //         }
-// // //     });
-// // // });
-// // // function renderMessages() {
-// // //   chatBox.innerHTML = "";
-// // //   if (!activeUser) return;
-
-// // //   chats[activeUser].forEach(msg => {
-// // //     const div = document.createElement("div");
-// // //     div.classList.add("message", msg.type);
-// // //     div.textContent = msg.text;
-// // //     chatBox.appendChild(div);
-// // //   });
-
-// // //   chatBox.scrollTop = chatBox.scrollHeight;
-// // // }
+// //   chatBox.scrollTop = chatBox.scrollHeight;
+// // }

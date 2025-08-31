@@ -119,6 +119,7 @@ body {
   font-weight: bold;
 }
 
+
 /* ===== Chat Section ===== */
 .chat-section {
   width: 70%;
@@ -128,6 +129,9 @@ body {
 }
 
 .chat-header {
+  display: flex;
+  justify-content: flex-start; 
+  align-items: center;
   padding: 15px;
   background: #2980b9;
   color: #fff;
@@ -135,7 +139,17 @@ body {
   font-weight: bold;
   border-bottom: 1px solid #ddd;
 }
-
+.chat-header button{
+  margin-left: auto;
+  padding: 10px 18px;
+  font-size: 15px;
+  border: none;
+  background-color:white ;
+  color: #2980b9;
+  cursor: pointer;
+  border-radius: 20px;
+  transition: background 0.2s ease;
+}
 /* ===== Messages ===== */
 .chat-box {
   flex-grow: 1;
@@ -220,4 +234,36 @@ body {
 .user-list::-webkit-scrollbar-thumb {
   background: #ccc;
   border-radius: 10px;
+}
+/* Modal styles */
+#createGroupModal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 300px;
+}
+.modal-content h3 {
+    margin-top: 0;
+}
+.modal-content label {
+    display: block;
+    margin: 5px 0;
+}
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+}
+.modal-actions button {
+    margin-left: 10px;
+    padding: 5px 10px;
 }

@@ -17,14 +17,18 @@
         </div>
     </div>
     <div class="chat-container">
-        <!-- contacts section -->
         <div class="user-list">
-            <h3>Contacts</h3>
-            <ul id="users"></ul>
+            <h3>Contacts & Groups</h3>
+            <ul id="users">
+
+            </ul>
         </div>
         <!-- Chat section -->
-         <div class="chat-section">
-            <div class="chat-header" id="chatHeader">Chats</div>
+        <div class="chat-section">
+            <div class="chat-header" id="chatHeader">
+                Chats
+                <button id="createGroupBtn">Create Group</button>
+            </div>
             <div class="chat-box" id="chatBox"></div>
             <div class="message-input">
                 <form action="#" id="sendForm">
@@ -32,10 +36,12 @@
                     <button id="btn" type="submit">Send</button>
                 </form>    
             </div>
-         </div>
+        </div>
     </div>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="/js/config.js"></script>
     <script src="/js/chat.js"></script>
+    <!-- <script src="/js/websocketChat.js"></script> -->
 </body>
 </html>

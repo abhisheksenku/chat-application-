@@ -85,10 +85,9 @@ body {
 
 /* ===== User List ===== */
 .user-list {
-  width: 40%;
+  width: 30%;
   background: #f8f9fb;
-  border-right: 2px solid #ddd;
-  border-radius: 5px;
+  border-right: 1px solid #ddd;
   padding: 15px;
   overflow-y: auto;
 }
@@ -120,6 +119,7 @@ body {
   font-weight: bold;
 }
 
+
 /* ===== Chat Section ===== */
 .chat-section {
   width: 70%;
@@ -129,6 +129,9 @@ body {
 }
 
 .chat-header {
+  display: flex;
+  justify-content: flex-start; 
+  align-items: center;
   padding: 15px;
   background: #2980b9;
   color: #fff;
@@ -136,7 +139,17 @@ body {
   font-weight: bold;
   border-bottom: 1px solid #ddd;
 }
-
+.chat-header button{
+  margin-left: auto;
+  padding: 10px 18px;
+  font-size: 15px;
+  border: none;
+  background-color:white ;
+  color: #2980b9;
+  cursor: pointer;
+  border-radius: 20px;
+  transition: background 0.2s ease;
+}
 /* ===== Messages ===== */
 .chat-box {
   flex-grow: 1;

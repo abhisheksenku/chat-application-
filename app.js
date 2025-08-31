@@ -12,6 +12,7 @@ const models = require('./models/association');
 const userAuthenticate = require('./middleware/auth');
 const userRoutes = require('./routes/userRoutes');
 const chatRoutes = require('./routes/chatRoutes');
+const groupRoutes = require('./routes/groupRoutes');
 
 
 const app = express();
@@ -38,6 +39,7 @@ app.use(cors());
 // routes
 app.use('/user', userRoutes);
 app.use('/chat', chatRoutes);
+app.use('/group', groupRoutes);
 
 // root + auth-protected pages
 app.get('/', (req, res) => {
